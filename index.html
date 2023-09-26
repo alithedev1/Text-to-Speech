@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text to Speech</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center">Text to Speech</h1>
+        <div class="form-group">
+            <textarea id="textToSpeak" class="form-control" rows="4" placeholder="Enter text to be spoken"></textarea>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label for="pitch">Pitch (0.1 to 2):</label>
+                <input type="number" id="pitch" class="form-control" step="0.1" min="0.1" max="2" value="1">
+            </div>
+            <div class="form-group col-md-6">
+                <label for="rate">Speech Rate (0.1 to 10):</label>
+                <input type="number" id="rate" class="form-control" step="0.1" min="0.1" max="10" value="1">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="voiceSelect">Choose an English Voice:</label>
+            <select id="voiceSelect" class="form-control"></select>
+        </div>
+        <div class="row">
+            <div class="col">
+                <button id="speakButton" class="btn btn-primary btn-block">Speak</button>
+            </div>
+            <div class="col">
+                <button id="stopButton" class="btn btn-danger btn-block" style="display: none;">Stop</button>
+            </div>
+            <div class="col"></div>
+            <div class="col"></div>
+        </div>
+    </div>
+
+    <script>
+        const speakButton = document.getElementById('speakButton');
+        const stopButton = document.getElementById('stopButton');
+        const textToSpeak = document.getElementById('textToSpeak');
+        const pitchInput = document.getElementById('pitch');
+        const rateInput = document.getElementById('rate');
+        const voiceSelect = document.getElementById('voiceSelect');
+        let speaking = false;
+
+        // Function to populate the dropdown with English voices
+        function populateVoicesDropdown() {
+            const synthesis = window.speechSynthesis;
+            synthesis.onvoiceschanged = function () {
+                const voices = synthesis.getVoices();
+
+                voices.forEach(voice => {
+                    if (voice.lang.startsWith('en')) { // Check if the voice is English
+                        const option = document.createElement('option');
+                        option.value = voice.name;
+                        option.textContent = voice.name;
+                        voiceSelect.appendChild(option);
+                    }
+                });
+            };
+        }
+
+        // Populate the dropdown with English voices when the page loads
+        window.addEventListener('DOMContentLoaded', () => {
+            populateVoicesDropdown();
+        });
+
+        // Function to get the voice by name
+        function getVoiceByName(name) {
+            const voices = window.speechSynthesis.getVoices();
+            return voices.find(voice => voice.name === name);
+        }
+
+        speakButton.addEventListener('click', () => {
+            const text = textToSpeak.value;
+            if (text && !speaking) {
+                const synthesis = window.speechSynthesis;
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.pitch = parseFloat(pitchInput.value);
+                utterance.rate = parseFloat(rateInput.value);
+
+                // Get the selected voice from the dropdown
+                const selectedVoiceName = voiceSelect.value;
+                const selectedVoice = getVoiceByName(selectedVoiceName);
+
+                if (selectedVoice) {
+                    utterance.voice = selectedVoice;
+                } else {
+                    alert('Selected voice not found.');
+                    return;
+                }
+
+                utterance.addEventListener('end', () => {
+                    speaking = false;
+                    stopButton.style.display = 'none';
+                    speakButton.style.display = 'block';
+                });
+
+                synthesis.speak(utterance);
+                speaking = true;
+                stopButton.style.display = 'block';
+                speakButton.style.display = 'none';
+            } else if (speaking) {
+                alert('Speech is already in progress. Click "Stop" to stop the current speech.');
+            } else {
+                alert('Please enter some text to speak.');
+            }
+        });
+
+        stopButton.addEventListener('click', () => {
+            speechSynthesis.cancel();
+            speaking = false;
+            stopButton.style.display = 'none';
+            speakButton.style.display = 'block';
+        });
+    </script>
+</body>
+</html>
